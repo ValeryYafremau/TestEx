@@ -72,10 +72,6 @@ function _getEmail (flag, condition) {
   });
 }
 
-function getEmailBySubject(subject) {
-  return _getEmail('ALL', ['SUBJECT', subject])
-}
-
 _getEmail('ALL', ['SUBJECT', 'AAA']).then(
   function (fulfill){
     console.log (fulfill)
