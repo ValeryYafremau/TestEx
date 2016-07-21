@@ -1,0 +1,1 @@
+console.log(require('./server').getEmailBySubject('AAA'))

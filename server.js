@@ -1,21 +1,27 @@
-var Imap, getEmailBySubject, imap, _getEmail;
+var Imap, getEmailBySubject, _getEmail;
 Imap = require('imap');
-imap = new Imap({
-  user: 'user',
-  password: 'pas',
-  host: 'imap.gmail.com',
-  port: 993,
-  tls: true
-});
 _getEmail = function(flag, condition) {
-  var data, fetchEmail, sync;
+  var fetchEmail, imap, maxLatency, res, start, sync;
+  imap = new Imap({
+    user: 'dezmandpalmusgermany@gmail.com',
+    password: 'inokkoeayegveigm',
+    host: 'imap.gmail.com',
+    port: 993,
+    tls: true
+  });
+  res = {
+    error: null,
+    data: ''
+  };
+  maxLatency = 15000;
+  start = new Date();
   sync = true;
-  data = '';
   fetchEmail = function() {
     return imap.search([flag, condition], function(err, results) {
       var f;
       if (err) {
-        throw err;
+        res.error = 'Not found';
+        sync = false;
       }
       if (results.length) {
         f = imap.fetch(results, {
@@ -24,12 +30,14 @@ _getEmail = function(flag, condition) {
         f.on('message', function(msg, seqno) {
           return msg.on('body', function(stream, info) {
             return stream.on('data', function(chunk) {
-              return data += chunk.toString('utf8');
+              return res.data += chunk.toString('utf8');
             });
           });
         });
         f.once('error', function(err) {
-          return console.log(err);
+          res.error = err;
+          imap.end();
+          return sync = false;
         });
         return f.once('end', function() {
           imap.end();
@@ -47,15 +55,22 @@ _getEmail = function(flag, condition) {
     });
   });
   imap.once('error', function(err) {
-    return console.log(err);
+    res.error = err;
+    return imap.end();
   });
   imap.connect();
   while (sync) {
+    if (new Date - start > maxLatency) {
+      res.error = 'Not found';
+      imap.end();
+      sync = false;
+    }
     require('deasync').sleep(100);
   }
-  return data;
+  return res;
 };
 getEmailBySubject = function(subject) {
   return _getEmail('ALL', ['SUBJECT', subject]);
 };
-console.log(getEmailBySubject('AAA1'));
+module.exports._getEmail = _getEmail;
+module.exports.getEmailBySubject = getEmailBySubject;

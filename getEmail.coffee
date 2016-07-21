@@ -1,14 +1,22 @@
+
 Imap = require 'imap'
-imap = new Imap
-  user: 'user'
-  password: 'pas'
-  host: 'imap.gmail.com'
-  port: 993
-  tls: true
 
 _getEmail = (flag, condition) ->
+
+  imap = new Imap
+    user: 'dezmandpalmusgermany@gmail.com'
+    password: 'inokkoeayegveigm'
+    host: 'imap.gmail.com'
+    port: 993
+    tls: true
+
+  res = 
+    error: null
+    data: ''
+
+  maxLatency = 15000
+  start = new Date()
   sync = true
-  data = ''
 
   fetchEmail = ->
     imap.search [
@@ -17,23 +25,25 @@ _getEmail = (flag, condition) ->
     ], (err, results) ->
 
       if err
-        throw err
+        res.error = 'Not found'
+        sync = false
 
       if results.length
-        f = imap.fetch results, bodies: [ 'TEXT' ]
+        f = imap.fetch(results, bodies: [ 'TEXT' ])
 
         f.on 'message', (msg, seqno) ->
           msg.on 'body', (stream, info) ->
             stream.on 'data', (chunk) ->
-              data += chunk.toString 'utf8'
+              res.data += chunk.toString 'utf8'
 
         f.once 'error', (err) ->
-          console.log err
+          res.error = err
+          imap.end()
+          sync = false
 
         f.once 'end', ->
           imap.end()
           sync = false
-
 
   imap.once 'ready', ->
     imap.openBox 'INBOX', true, (err, box) ->
@@ -42,12 +52,19 @@ _getEmail = (flag, condition) ->
         fetchEmail()
 
   imap.once 'error', (err) ->
-    console.log err
+    res.error = err
+    imap.end()
 
   imap.connect()
+
   while sync
+    if new Date - start > maxLatency
+      res.error = 'Not found'
+      imap.end()
+      sync = false
+
     require('deasync').sleep 100
-  data
+  res
 
 getEmailBySubject = (subject) ->
   _getEmail 'ALL', [
@@ -55,4 +72,5 @@ getEmailBySubject = (subject) ->
     subject
   ]
 
-console.log getEmailBySubject 'AAA1'
+module.exports._getEmail = _getEmail
+module.exports.getEmailBySubject = getEmailBySubject
