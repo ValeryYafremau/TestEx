@@ -4,8 +4,8 @@ Imap = require 'imap'
 _getEmail = (flag, condition) ->
 
   imap = new Imap
-    user: 'dezmandpalmusgermany@gmail.com'
-    password: 'inokkoeayegveigm'
+    user: 'user'
+    password: 'pas'
     host: 'imap.gmail.com'
     port: 993
     tls: true
