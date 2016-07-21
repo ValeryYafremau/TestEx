@@ -1,79 +1,61 @@
-var Imap = require('imap');
-
-var imap = new Imap({
+var Imap, getEmailBySubject, imap, _getEmail;
+Imap = require('imap');
+imap = new Imap({
   user: 'user',
-  password: 'password',
+  password: 'pas',
   host: 'imap.gmail.com',
   port: 993,
   tls: true
 });
-
-function _getEmail (flag, condition) {
-
-  return new Promise(function (fulfill, reject) {
-    
-    var buffer = '';
-
-    function openInbox(cb) {
-      imap.openBox('INBOX', true, cb);
-    }
-
-    function fetchEmail () {
-
-        imap.search([flag, condition], function (err, results) {
-      
-          if (err) throw err;
-
-          if (results.length) {
-
-            var f = imap.fetch(results, { bodies: ['TEXT'] });
-                
-            f.on('message', function (msg, seqno) {
-        
-              msg.on('body', function (stream, info) {
-        
-                stream.on('data', function (chunk) {
-                  buffer += chunk.toString('utf8');
-                });
-
-              });
-
-            });
-
-            f.once('error', function (err) {
-              reject(err);
-            });
-        
-            f.once('end', function () {
-              imap.end();
-              fulfill(buffer);
-            });
-          }
-
+_getEmail = function(flag, condition) {
+  var data, fetchEmail, sync;
+  sync = true;
+  data = '';
+  fetchEmail = function() {
+    return imap.search([flag, condition], function(err, results) {
+      var f;
+      if (err) {
+        throw err;
+      }
+      if (results.length) {
+        f = imap.fetch(results, {
+          bodies: ['TEXT']
         });
-    }
-
-    imap.once('ready', function() {
-
-      openInbox(function (err, box) {
-        fetchEmail();
-        imap.on('mail', function (){
-          fetchEmail();
+        f.on('message', function(msg, seqno) {
+          return msg.on('body', function(stream, info) {
+            return stream.on('data', function(chunk) {
+              return data += chunk.toString('utf8');
+            });
+          });
         });
+        f.once('error', function(err) {
+          return console.log(err);
+        });
+        return f.once('end', function() {
+          imap.end();
+          return sync = false;
+        });
+      }
+    });
+  };
+  imap.once('ready', function() {
+    return imap.openBox('INBOX', true, function(err, box) {
+      fetchEmail();
+      return imap.on('mail', function() {
+        return fetchEmail();
       });
     });
-
-    imap.once('error', function (err) {
-      reject(err);
-    });
-
-    imap.connect();
-
   });
-}
-
-_getEmail('ALL', ['SUBJECT', 'AAA']).then(
-  function (fulfill){
-    console.log (fulfill)
+  imap.once('error', function(err) {
+    return console.log(err);
+  });
+  imap.connect();
+  while (sync) {
+    require('deasync').sleep(100);
   }
-);
+  return data;
+};
+getEmailBySubject = function(subject) {
+  return _getEmail('ALL', ['SUBJECT', subject]);
+};
+console.log(getEmailBySubject('AAA1'));
