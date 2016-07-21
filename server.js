@@ -3,8 +3,8 @@ Imap = require('imap');
 _getEmail = function(flag, condition) {
   var fetchEmail, imap, maxLatency, res, start, sync;
   imap = new Imap({
-    user: 'dezmandpalmusgermany@gmail.com',
-    password: 'inokkoeayegveigm',
+    user: 'autotest.cms.scoop@gmail.com',
+    password: 'js4playback',
     host: 'imap.gmail.com',
     port: 993,
     tls: true
